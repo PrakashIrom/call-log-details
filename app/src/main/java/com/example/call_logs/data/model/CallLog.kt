@@ -9,3 +9,8 @@ data class CallLog(
     val callDuration: String,
     val callDate: String
 )
+
+@Serializable
+data class Response(
+    val status : String
+)

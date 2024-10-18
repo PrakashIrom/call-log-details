@@ -1,6 +1,7 @@
 package com.example.call_logs.data
 
 import com.example.call_logs.data.model.CallLog
+import com.example.call_logs.data.model.Response
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import kotlinx.serialization.json.Json
 import retrofit2.Retrofit
@@ -15,7 +16,7 @@ interface UrlApiService{
     @POST("/syncCallLogs")
     suspend fun sendCallLogs(
         @Body callLog: CallLog
-    )
+    ): Response
 
 }
 
