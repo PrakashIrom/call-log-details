@@ -9,24 +9,23 @@ import retrofit2.http.Body
 import retrofit2.http.POST
 import okhttp3.MediaType.Companion.toMediaType
 
-private const val BASE_URL = "https://api.example.com"
+class ApiCallLog(baseUrl:String) {
+    interface UrlApiService {
 
-interface UrlApiService{
+        @POST("/syncCallLogs")
+        suspend fun sendCallLogs(
+            @Body callLog: CallLog
+        ): Response
 
-    @POST("/syncCallLogs")
-    suspend fun sendCallLogs(
-        @Body callLog: CallLog
-    ): Response
-
-}
-
-private val retrofit:Retrofit = Retrofit.Builder()
-    .baseUrl(BASE_URL)
-    .addConverterFactory(Json.asConverterFactory("application/json".toMediaType()))
-    .build()
-
-object callApi {
-    val retrofitService: UrlApiService by lazy{
-    retrofit.create(UrlApiService::class.java)
     }
+
+    private val retrofit: Retrofit = Retrofit.Builder()
+        .baseUrl(baseUrl)
+        .addConverterFactory(Json.asConverterFactory("application/json".toMediaType()))
+        .build()
+
+        val retrofitService: UrlApiService by lazy {
+            retrofit.create(UrlApiService::class.java)
+        }
+
 }

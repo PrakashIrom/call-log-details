@@ -1,37 +1,35 @@
 package com.example.call_logs
 
 import android.annotation.SuppressLint
+import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Call
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.core.content.ContextCompat
 import androidx.navigation.compose.rememberNavController
 import com.example.call_logs.ui.Navigation
-import com.example.call_logs.ui.Screens
+import com.example.call_logs.ui.TopBar
 import com.example.call_logs.ui.theme.CalllogsTheme
+import android.Manifest
+import android.widget.Toast
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
+
+    private lateinit var requestPermissionLauncher: ActivityResultLauncher<String>
+  //  private val apiViewModel: UrlApiViewModel by viewModel()
+  //  private val dataStoreViewModel: UrlDataStoreViewModel by viewModel()
+
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,48 +44,81 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-    }
-}
 
-@Composable
-fun TopBar(navController: NavHostController) {
-
-    val currentBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentScreen = currentBackStackEntry?.destination?.route
-
-    if (currentScreen == Screens.CONFIGURATION.name) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            Row(modifier = Modifier.align(Alignment.TopCenter).padding(7.dp)) {
-                Text("Configuration")
-                Spacer(modifier = Modifier.size(5.dp))
-                Icon(imageVector = Icons.Default.Settings, contentDescription = "Configuration")
+        requestPermissionLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { isGranted: Boolean ->
+            if (isGranted) {
+                scheduleCallLogWorker() // Schedule worker if permission is granted
+            } else {
+                // Handle permission denied case
+                Toast.makeText(this, "Permission denied", Toast.LENGTH_SHORT).show()
             }
         }
-    } else {
-        Box(modifier = Modifier.fillMaxSize()) {
-            Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back",
-                modifier = Modifier
-                    .padding(10.dp)
-                    .clickable {
-                        navController.navigateUp()
+
+        checkPermissions()
+    }
+
+    /*
+    private fun readCallLogs() {
+        lifecycleScope.launch {
+            val cursor = contentResolver.query(CallLog.Calls.CONTENT_URI, null, null, null, null)
+            cursor?.use {
+                val numberIndex = it.getColumnIndex(CallLog.Calls.NUMBER)
+                val typeIndex = it.getColumnIndex(CallLog.Calls.TYPE)
+                val durationIndex = it.getColumnIndex(CallLog.Calls.DURATION)
+                val dateIndex = it.getColumnIndex(CallLog.Calls.DATE)
+
+                while (it.moveToNext()) {
+                    val phoneNumber = it.getString(numberIndex)
+                    val callType = it.getInt(typeIndex)
+                    val callDuration = it.getString(durationIndex)
+                    val callDate = it.getLong(dateIndex)
+
+                    val callTypeString = when (callType) {
+                        CallLog.Calls.INCOMING_TYPE -> "INCOMING"
+                        CallLog.Calls.OUTGOING_TYPE -> "OUTGOING"
+                        CallLog.Calls.MISSED_TYPE -> "MISSED"
+                        else -> "UNKNOWN"
                     }
-            )
-            Row(modifier = Modifier.align(Alignment.TopCenter).padding(10.dp)) {
-                Text("Call Logs")
-                Spacer(modifier = Modifier.size(5.dp))
-                Icon(imageVector = Icons.Default.Call, contentDescription = "Call")
+
+                   val callLog = com.example.call_logs.data.model.CallLog(
+                        mobileNumber = phoneNumber,
+                        callType = callTypeString,
+                        callDuration = callDuration,
+                        callDate = callDate.toString()
+                   )
+                    apiViewModel.sendCallLogs(callLog, dataStoreViewModel.accessUrl().toString())
+                }
             }
+        }
+    }
+*/
+    private fun scheduleCallLogWorker() {
+        val workRequest = PeriodicWorkRequestBuilder<CallLogWorker>(12, TimeUnit.HOURS)
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED) // Only run when connected to the internet
+                    .setRequiresBatteryNotLow(true) // Optional: run only when battery is not low
+                    .build()
+            )
+            .build()
+
+        WorkManager.getInstance(applicationContext).enqueueUniquePeriodicWork(
+            "CallLogWorker",
+            ExistingPeriodicWorkPolicy.KEEP, // Prevent creating multiple workers
+            workRequest
+        )
+    }
+
+    private fun checkPermissions() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CALL_LOG) != PackageManager.PERMISSION_GRANTED) {
+            // Request the permission
+            requestPermissionLauncher.launch(Manifest.permission.READ_CALL_LOG)
+        } else {
+            // Permission is already granted, schedule the worker
+            scheduleCallLogWorker()
         }
     }
 }
 
-
-@Preview(showBackground = true)
-@Composable
-fun TopBarPreview(){
-    CalllogsTheme {
-        val navController = rememberNavController()
-        TopBar(navController)
-    }
-}

@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,12 +31,16 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.call_logs.ui.theme.CalllogsTheme
+import com.example.call_logs.viewmodel.UrlDataStoreViewModel
+import kotlinx.coroutines.launch
+import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ConfigurationScreen(navController: NavHostController){
+fun ConfigurationScreen(navController: NavHostController, viewModel: UrlDataStoreViewModel = koinViewModel()){
 
     var input by remember { mutableStateOf("") }
+    val coroutineScope = rememberCoroutineScope()
 
     Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -50,7 +55,11 @@ fun ConfigurationScreen(navController: NavHostController){
             )
             )
         Spacer(modifier = Modifier.size(5.dp))
-        OutlinedButton(onClick = {},
+        OutlinedButton(onClick = {
+            coroutineScope.launch {
+                viewModel.saveUrl(input)
+            }
+        },
             border = BorderStroke(2.dp, MaterialTheme.colorScheme.inversePrimary),
             elevation = ButtonDefaults.buttonElevation(defaultElevation = 1.2.dp)
             ) {
