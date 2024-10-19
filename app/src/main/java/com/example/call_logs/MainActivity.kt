@@ -14,12 +14,14 @@ import com.example.call_logs.ui.Navigation
 import com.example.call_logs.ui.TopBar
 import com.example.call_logs.ui.theme.CalllogsTheme
 import android.Manifest
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import java.util.concurrent.TimeUnit
@@ -27,8 +29,6 @@ import java.util.concurrent.TimeUnit
 class MainActivity : ComponentActivity() {
 
     private lateinit var requestPermissionLauncher: ActivityResultLauncher<String>
-  //  private val apiViewModel: UrlApiViewModel by viewModel()
-  //  private val dataStoreViewModel: UrlDataStoreViewModel by viewModel()
 
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,6 +52,7 @@ class MainActivity : ComponentActivity() {
                 scheduleCallLogWorker() // Schedule worker if permission is granted
             } else {
                 // Handle permission denied case
+                Log.d("MainActivity", "Permission not granted, requesting permission")
                 Toast.makeText(this, "Permission denied", Toast.LENGTH_SHORT).show()
             }
         }
@@ -59,56 +60,18 @@ class MainActivity : ComponentActivity() {
         checkPermissions()
     }
 
-    /*
-    private fun readCallLogs() {
-        lifecycleScope.launch {
-            val cursor = contentResolver.query(CallLog.Calls.CONTENT_URI, null, null, null, null)
-            cursor?.use {
-                val numberIndex = it.getColumnIndex(CallLog.Calls.NUMBER)
-                val typeIndex = it.getColumnIndex(CallLog.Calls.TYPE)
-                val durationIndex = it.getColumnIndex(CallLog.Calls.DURATION)
-                val dateIndex = it.getColumnIndex(CallLog.Calls.DATE)
-
-                while (it.moveToNext()) {
-                    val phoneNumber = it.getString(numberIndex)
-                    val callType = it.getInt(typeIndex)
-                    val callDuration = it.getString(durationIndex)
-                    val callDate = it.getLong(dateIndex)
-
-                    val callTypeString = when (callType) {
-                        CallLog.Calls.INCOMING_TYPE -> "INCOMING"
-                        CallLog.Calls.OUTGOING_TYPE -> "OUTGOING"
-                        CallLog.Calls.MISSED_TYPE -> "MISSED"
-                        else -> "UNKNOWN"
-                    }
-
-                   val callLog = com.example.call_logs.data.model.CallLog(
-                        mobileNumber = phoneNumber,
-                        callType = callTypeString,
-                        callDuration = callDuration,
-                        callDate = callDate.toString()
-                   )
-                    apiViewModel.sendCallLogs(callLog, dataStoreViewModel.accessUrl().toString())
-                }
-            }
-        }
-    }
-*/
     private fun scheduleCallLogWorker() {
-        val workRequest = PeriodicWorkRequestBuilder<CallLogWorker>(12, TimeUnit.HOURS)
+        val workRequest = OneTimeWorkRequestBuilder<CallLogWorker>()
             .setConstraints(
                 Constraints.Builder()
-                    .setRequiredNetworkType(NetworkType.CONNECTED) // Only run when connected to the internet
-                    .setRequiresBatteryNotLow(true) // Optional: run only when battery is not low
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .setRequiresBatteryNotLow(true)
                     .build()
             )
             .build()
 
-        WorkManager.getInstance(applicationContext).enqueueUniquePeriodicWork(
-            "CallLogWorker",
-            ExistingPeriodicWorkPolicy.KEEP, // Prevent creating multiple workers
-            workRequest
-        )
+        WorkManager.getInstance(applicationContext).enqueue(workRequest)
+
     }
 
     private fun checkPermissions() {

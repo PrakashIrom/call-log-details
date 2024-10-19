@@ -1,7 +1,7 @@
 package com.example.call_logs.viewmodel
 
 import android.annotation.SuppressLint
-import androidx.compose.runtime.MutableState
+import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
 import com.example.call_logs.data.ApiCallLog
@@ -36,7 +36,8 @@ class UrlApiViewModel: ViewModel() {
         }
     }
 
-    suspend fun addCallLog(callLog:CallLog){
+    fun addCallLog(callLog:CallLog){
+        Log.d("CallLogViewModel", "Adding call log: ${callLog.mobileNumber}, ${callLog.callType}, ${callLog.callDuration}, ${callLog.callDate}")
         callLogs.add(callLog)
     }
 
