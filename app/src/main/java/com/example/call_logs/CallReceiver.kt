@@ -6,16 +6,22 @@ import android.content.Context
 import android.content.Intent
 import android.telephony.TelephonyManager
 import android.util.Log
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 
-class CallReceiver:BroadcastReceiver() {
+class CallReceiver : BroadcastReceiver() {
+
     @SuppressLint("UnsafeProtectedBroadcastReceiver")
-    override fun onReceive(p0: Context?, intent: Intent?) {
+    override fun onReceive(context: Context?, intent: Intent?) {
         val state = intent?.getStringExtra(TelephonyManager.EXTRA_STATE)
-        val phoneNumber = intent?.getStringExtra(TelephonyManager.EXTRA_INCOMING_NUMBER)
 
-        if (state == TelephonyManager.EXTRA_STATE_IDLE && phoneNumber != null) {
-            // Call has ended, start syncing call log
-            Log.d("CallReceiver", "Call ended for number: $phoneNumber")
+        if (state == TelephonyManager.EXTRA_STATE_IDLE) {
+            // Phone call has ended, enqueue work to sync call logs
+            if (context != null) {
+                val workRequest = OneTimeWorkRequestBuilder<CallLogWorker>().build()
+                WorkManager.getInstance(context).enqueue(workRequest)
+                Log.d("CallReceiver", "Call log sync work enqueued.")
+            }
         }
     }
 }

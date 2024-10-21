@@ -24,6 +24,7 @@ class UrlApiViewModel: ViewModel() {
 
     @SuppressLint("SuspiciousIndentation")
     suspend fun sendCallLogs(callLog: CallLog, baseUrl:String){
+        Log.d("Base url", baseUrl)
         status.value = UrlApiStatus.Loading
         status.value = try{
             val callApi = ApiCallLog(baseUrl)

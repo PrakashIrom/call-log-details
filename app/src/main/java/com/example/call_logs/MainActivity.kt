@@ -3,8 +3,12 @@ package com.example.call_logs
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
@@ -14,74 +18,70 @@ import com.example.call_logs.ui.Navigation
 import com.example.call_logs.ui.TopBar
 import com.example.call_logs.ui.theme.CalllogsTheme
 import android.Manifest
-import android.util.Log
-import android.widget.Toast
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.work.Constraints
-import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.NetworkType
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.PeriodicWorkRequestBuilder
-import androidx.work.WorkManager
-import java.util.concurrent.TimeUnit
+import android.content.IntentFilter
+import android.telephony.TelephonyManager
+
 
 class MainActivity : ComponentActivity() {
 
-    private lateinit var requestPermissionLauncher: ActivityResultLauncher<String>
+    private lateinit var requestPermissionLauncher: ActivityResultLauncher<Array<String>>
 
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent {
-            val navController = rememberNavController()
-            CalllogsTheme {
-                Scaffold(modifier = Modifier.fillMaxSize(),
-                    topBar = {TopBar(navController)}
-                    )
-                {
-                    Navigation(navController = navController)
-                }
-            }
-        }
 
+        // Request permissions
         requestPermissionLauncher = registerForActivityResult(
-            ActivityResultContracts.RequestPermission()
-        ) { isGranted: Boolean ->
-            if (isGranted) {
-                scheduleCallLogWorker() // Schedule worker if permission is granted
+            ActivityResultContracts.RequestMultiplePermissions()
+        ) { permissions ->
+            if (permissions[Manifest.permission.READ_CALL_LOG] == true &&
+                permissions[Manifest.permission.READ_PHONE_STATE] == true) {
+                // Permissions granted, proceed
+                registerCallReceiver()
+                Log.d("MainActivity", "Permissions granted.")
             } else {
                 // Handle permission denied case
-                Log.d("MainActivity", "Permission not granted, requesting permission")
-                Toast.makeText(this, "Permission denied", Toast.LENGTH_SHORT).show()
+                Log.d("MainActivity", "Permissions not granted.")
+                Toast.makeText(this, "Permissions denied", Toast.LENGTH_SHORT).show()
             }
         }
 
         checkPermissions()
-    }
 
-    private fun scheduleCallLogWorker() {
-        val workRequest = OneTimeWorkRequestBuilder<CallLogWorker>()
-            .setConstraints(
-                Constraints.Builder()
-                    .setRequiredNetworkType(NetworkType.CONNECTED)
-                    .setRequiresBatteryNotLow(true)
-                    .build()
-            )
-            .build()
-
-        WorkManager.getInstance(applicationContext).enqueue(workRequest)
-
+        setContent {
+            val navController = rememberNavController()
+            CalllogsTheme {
+                Scaffold(modifier = Modifier.fillMaxSize(),
+                    topBar = { TopBar(navController) }
+                ) {
+                    Navigation(navController = navController)
+                }
+            }
+        }
     }
 
     private fun checkPermissions() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CALL_LOG) != PackageManager.PERMISSION_GRANTED) {
-            // Request the permission
-            requestPermissionLauncher.launch(Manifest.permission.READ_CALL_LOG)
+        val permissionsNeeded = arrayOf(
+            Manifest.permission.READ_CALL_LOG,
+            Manifest.permission.READ_PHONE_STATE
+        )
+
+        val permissionsGranted = permissionsNeeded.all {
+            ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
+        }
+
+        if (!permissionsGranted) {
+            requestPermissionLauncher.launch(permissionsNeeded)
         } else {
-            // Permission is already granted, schedule the worker
-            scheduleCallLogWorker()
+            // Permissions are already granted, you can initialize things like WorkManager
+            Log.d("MainActivity", "All permissions are already granted.")
         }
     }
-}
 
+    private fun registerCallReceiver() {
+        // Register CallReceiver for PHONE_STATE changes
+        val intentFilter = IntentFilter(TelephonyManager.ACTION_PHONE_STATE_CHANGED)
+        registerReceiver(CallReceiver(), intentFilter)
+        Log.d("MainActivity", "CallReceiver registered.")
+    }
+}

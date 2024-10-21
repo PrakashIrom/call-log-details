@@ -1,40 +1,51 @@
 package com.example.call_logs
 
 import android.content.Context
-import androidx.core.content.ContextCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.example.call_logs.viewmodel.UrlApiViewModel
 import com.example.call_logs.viewmodel.UrlDataStoreViewModel
-import android.Manifest
-import android.content.pm.PackageManager
 import android.provider.CallLog
 import android.util.Log
+import kotlinx.coroutines.flow.firstOrNull
 import org.koin.java.KoinJavaComponent.inject
+import java.text.SimpleDateFormat
+import java.util.Date
 
 class CallLogWorker(
-    context:Context, // provided by WorkManager
-    params: WorkerParameters, // provided by WorkManager
-): CoroutineWorker(context, params) {
+    context: Context,
+    workerParams: WorkerParameters
+) : CoroutineWorker(context, workerParams) {
 
     private val apiViewModel: UrlApiViewModel by inject(UrlApiViewModel::class.java)
     private val dataStoreViewModel: UrlDataStoreViewModel by inject(UrlDataStoreViewModel::class.java)
 
-    override suspend fun doWork(): Result{
-        Log.d("CallLogWorker", "CallLogWorker started")
-        val permission = ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.READ_CALL_LOG)
-
-        if(permission != PackageManager.PERMISSION_GRANTED){
-            Log.d("CallLogWorker", "Permission denied")
-            return Result.failure()
+    override suspend fun doWork(): Result {
+        return try {
+            syncCallLogs(applicationContext)
+            Result.success()
+        } catch (e: Exception) {
+            Log.e("CallLogSyncWorker", "Error syncing call logs", e)
+            Result.failure()
         }
+    }
 
-        val cursor = applicationContext.contentResolver.query(CallLog.Calls.CONTENT_URI, null, null, null, null)
-        if (cursor == null) {
-            Log.d("CallLogWorker", "Cursor is null. No call logs found.")
-        } else {
-            Log.d("CallLogWorker", "Cursor obtained. Processing call logs.")
-        }
+    private suspend fun syncCallLogs(context: Context) {
+        val projection = arrayOf(
+            CallLog.Calls.NUMBER,
+            CallLog.Calls.TYPE,
+            CallLog.Calls.DATE,
+            CallLog.Calls.DURATION
+        )
+
+        val cursor = context.contentResolver.query(
+            CallLog.Calls.CONTENT_URI,
+            projection,
+            null,
+            null,
+            CallLog.Calls.DATE + " DESC"
+        )
+
         cursor?.use {
             val numberIndex = it.getColumnIndex(CallLog.Calls.NUMBER)
             val typeIndex = it.getColumnIndex(CallLog.Calls.TYPE)
@@ -46,7 +57,9 @@ class CallLogWorker(
                 val callType = it.getInt(typeIndex)
                 val callDuration = it.getString(durationIndex)
                 val callDate = it.getLong(dateIndex)
-
+                val date = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(
+                    Date(callDate)
+                )
                 val callTypeString = when (callType) {
                     CallLog.Calls.INCOMING_TYPE -> "INCOMING"
                     CallLog.Calls.OUTGOING_TYPE -> "OUTGOING"
@@ -54,20 +67,21 @@ class CallLogWorker(
                     else -> "UNKNOWN"
                 }
 
+                // Collect data from DataStore
+                val baseUrl = dataStoreViewModel.accessUrl().firstOrNull() ?: ""
+
                 // Create the CallLog model object
                 val callLog = com.example.call_logs.data.model.CallLog(
                     mobileNumber = phoneNumber,
                     callType = callTypeString,
                     callDuration = callDuration,
-                    callDate = callDate.toString()
+                    callDate = date.toString()
                 )
-                Log.d("CallLogWorker", "Adding call log: ${callLog.mobileNumber}, ${callLog.callType}, ${callLog.callDuration}, ${callLog.callDate}")
-                apiViewModel.sendCallLogs(callLog, dataStoreViewModel.accessUrl().toString())
+
+                Log.d("CallLogSyncWorker", "Adding call log: $callLog")
+                apiViewModel.sendCallLogs(callLog, baseUrl)
                 apiViewModel.addCallLog(callLog)
             }
         }
-
-        return Result.success()
     }
-
 }

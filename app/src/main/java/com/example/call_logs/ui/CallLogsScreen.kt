@@ -26,7 +26,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.call_logs.data.model.CallLog
 import com.example.call_logs.ui.theme.CalllogsTheme
 import com.example.call_logs.viewmodel.UrlApiViewModel
 import org.koin.compose.viewmodel.koinViewModel
