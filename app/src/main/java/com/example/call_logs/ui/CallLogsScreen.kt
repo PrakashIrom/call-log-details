@@ -27,6 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.call_logs.ui.theme.CalllogsTheme
+import com.example.call_logs.viewmodel.UrlApiStatus
 import com.example.call_logs.viewmodel.UrlApiViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -36,12 +37,18 @@ fun CallLogScreen(viewModel: UrlApiViewModel = koinViewModel()){
     var search by remember{
         mutableStateOf("")
     }
-    val status = viewModel._status.collectAsState()
+    val status by viewModel.status.collectAsState()
     val callLogs = viewModel.callLogs
 
-    Toast.makeText(LocalContext.current, status.toString(), Toast.LENGTH_SHORT).show()
+   // Toast.makeText(LocalContext.current, status.toString(), Toast.LENGTH_SHORT).show()
 
     Column {
+
+        when(val response = status){
+            is UrlApiStatus.Loading -> Text(text = "Loading")
+            is UrlApiStatus.Error -> Text(text = "Error")
+            is UrlApiStatus.Success -> Text(response.response.toString())
+        }
 
         OutlinedTextField(
             value = search,
@@ -51,6 +58,8 @@ fun CallLogScreen(viewModel: UrlApiViewModel = koinViewModel()){
                 Icon(imageVector = Icons.Default.Search, contentDescription = "Search")
             }, modifier = Modifier.padding(top = 40.dp, start = 10.dp, end = 10.dp, bottom = 18.dp).fillMaxWidth()
         )
+
+        Text("")
 
         val searchItems = callLogs.filter{
             it.callDate.contains(search)

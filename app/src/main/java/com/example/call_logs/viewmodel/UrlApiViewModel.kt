@@ -11,28 +11,30 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 sealed interface UrlApiStatus{
-    data class Success(val status: Response): UrlApiStatus
+    data class Success(val response: Response): UrlApiStatus
     object Error: UrlApiStatus
     object Loading: UrlApiStatus
 }
 
 class UrlApiViewModel: ViewModel() {
 
-    private val status = MutableStateFlow<UrlApiStatus>(UrlApiStatus.Loading)
-    val _status: StateFlow<UrlApiStatus> = status
+    private val _status = MutableStateFlow<UrlApiStatus>(UrlApiStatus.Loading)
+    val status: StateFlow<UrlApiStatus> = _status
     val callLogs = mutableStateListOf<CallLog>()
 
     @SuppressLint("SuspiciousIndentation")
     suspend fun sendCallLogs(callLog: CallLog, baseUrl:String){
         Log.d("Base url", baseUrl)
-        status.value = UrlApiStatus.Loading
-        status.value = try{
+        _status.value = UrlApiStatus.Loading
+        _status.value = try{
             val callApi = ApiCallLog(baseUrl)
             val response = callApi.retrofitService.sendCallLogs(callLog)
+            Log.d("Success", response.toString())
             UrlApiStatus.Success(response)
         }
         catch(e: Exception){
-            e.printStackTrace()
+            Log.e("Error Hello", "An error occurred: ${e.message}", e)
+            //e.printStackTrace()
             UrlApiStatus.Error
         }
     }
