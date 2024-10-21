@@ -59,6 +59,7 @@ fun ConfigurationScreen(navController: NavHostController, viewModel: UrlDataStor
             coroutineScope.launch {
                 viewModel.saveUrl(input)
             }
+            input=""
         },
             border = BorderStroke(2.dp, MaterialTheme.colorScheme.inversePrimary),
             elevation = ButtonDefaults.buttonElevation(defaultElevation = 1.2.dp)
