@@ -39,9 +39,10 @@ class UrlApiViewModel: ViewModel() {
         }
     }
 
+    /*
     fun addCallLog(callLog:CallLog){
         Log.d("CallLogViewModel", "Adding call log: ${callLog.mobileNumber}, ${callLog.callType}, ${callLog.callDuration}, ${callLog.callDate}")
         callLogs.add(callLog)
-    }
+    }*/
 
 }

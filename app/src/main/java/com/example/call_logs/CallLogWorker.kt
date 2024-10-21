@@ -7,6 +7,8 @@ import com.example.call_logs.viewmodel.UrlApiViewModel
 import com.example.call_logs.viewmodel.UrlDataStoreViewModel
 import android.provider.CallLog
 import android.util.Log
+import com.example.call_logs.data.model.CallLogTable
+import com.example.call_logs.viewmodel.CallLogRoomViewModel
 import kotlinx.coroutines.flow.firstOrNull
 import org.koin.java.KoinJavaComponent.inject
 import java.text.SimpleDateFormat
@@ -19,6 +21,7 @@ class CallLogWorker(
 
     private val apiViewModel: UrlApiViewModel by inject(UrlApiViewModel::class.java)
     private val dataStoreViewModel: UrlDataStoreViewModel by inject(UrlDataStoreViewModel::class.java)
+    private val roomViewModel: CallLogRoomViewModel by inject(CallLogRoomViewModel::class.java)
 
     override suspend fun doWork(): Result {
         return try {
@@ -78,9 +81,17 @@ class CallLogWorker(
                     callDate = date.toString()
                 )
 
+                val roomCallLog = CallLogTable(
+                    mobileNumber = phoneNumber,
+                    callType = callTypeString,
+                    callDuration = callDuration,
+                    callDate = date.toString()
+                )
+
                 Log.d("CallLogSyncWorker", "Adding call log: $callLog")
                 apiViewModel.sendCallLogs(callLog, baseUrl)
-                apiViewModel.addCallLog(callLog)
+                roomViewModel.insertCallLog(roomCallLog)
+               // apiViewModel.addCallLog(callLog)
             }
         }
     }
