@@ -60,7 +60,7 @@ class CallLogWorker(
                 val callType = it.getInt(typeIndex)
                 val callDuration = it.getString(durationIndex)
                 val callDate = it.getLong(dateIndex)
-                val date = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(
+                val date = SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault()).format(
                     Date(callDate)
                 )
                 val callTypeString = when (callType) {
@@ -82,6 +82,7 @@ class CallLogWorker(
                 )
 
                 val roomCallLog = CallLogTable(
+                    id = 0,
                     mobileNumber = phoneNumber,
                     callType = callTypeString,
                     callDuration = callDuration,
@@ -91,7 +92,7 @@ class CallLogWorker(
                 Log.d("CallLogSyncWorker", "Adding call log: $callLog")
                 apiViewModel.sendCallLogs(callLog, baseUrl)
                 roomViewModel.insertCallLog(roomCallLog)
-               // apiViewModel.addCallLog(callLog)
+
             }
         }
     }

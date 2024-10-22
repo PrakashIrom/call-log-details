@@ -6,6 +6,7 @@ import androidx.room.PrimaryKey
 @Entity("Call_Log")
 data class CallLogTable(
     @PrimaryKey(autoGenerate = true)
+    val id:Int,
     val mobileNumber: String,
     val callType: String,
     val callDuration: String,

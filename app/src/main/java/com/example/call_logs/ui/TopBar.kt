@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
@@ -33,7 +34,9 @@ fun TopBar(navController: NavHostController) {
     if (currentScreen == Screens.CONFIGURATION.name) {
         Box(modifier = Modifier.fillMaxSize()) {
             Row(modifier = Modifier.align(Alignment.TopCenter).padding(7.dp)) {
-                Text("Configuration")
+                Text("Configuration",
+                    fontWeight = FontWeight.Bold
+                    )
                 Spacer(modifier = Modifier.size(5.dp))
                 Icon(imageVector = Icons.Default.Settings, contentDescription = "Configuration")
             }
@@ -49,7 +52,9 @@ fun TopBar(navController: NavHostController) {
                     }
             )
             Row(modifier = Modifier.align(Alignment.TopCenter).padding(10.dp)) {
-                Text("Call Logs")
+                Text("Call Logs",
+                    fontWeight = FontWeight.Bold
+                    )
                 Spacer(modifier = Modifier.size(5.dp))
                 Icon(imageVector = Icons.Default.Call, contentDescription = "Call")
             }

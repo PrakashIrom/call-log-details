@@ -20,6 +20,12 @@ import com.example.call_logs.ui.theme.CalllogsTheme
 import android.Manifest
 import android.content.IntentFilter
 import android.telephony.TelephonyManager
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 
 
 class MainActivity : ComponentActivity() {
@@ -50,8 +56,10 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val navController = rememberNavController()
+            enableEdgeToEdge()
             CalllogsTheme {
-                Scaffold(modifier = Modifier.fillMaxSize(),
+                Scaffold(modifier = Modifier.fillMaxSize()
+                    .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Top)),
                     topBar = { TopBar(navController) }
                 ) {
                     Navigation(navController = navController)

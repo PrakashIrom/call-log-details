@@ -18,7 +18,8 @@ class CallReceiver : BroadcastReceiver() {
         if (state == TelephonyManager.EXTRA_STATE_IDLE) {
             // Phone call has ended, enqueue work to sync call logs
             if (context != null) {
-                val workRequest = OneTimeWorkRequestBuilder<CallLogWorker>().build()
+                val workRequest = OneTimeWorkRequestBuilder<CallLogWorker>()
+                    .build()
                 WorkManager.getInstance(context).enqueue(workRequest)
                 Log.d("CallReceiver", "Call log sync work enqueued.")
             }
